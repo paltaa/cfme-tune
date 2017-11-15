@@ -1,0 +1,30 @@
+---
+#
+# Run adhoc checks that could also be viewed via Grafana dashboards for the appliance
+# Refer to https://github.com/redhat-performance/cfme-performance for more on that.
+# 
+
+- name: Check validate worker output
+  shell: |
+    cd /var/www/miq/vmdb/log && \
+       egrep 'MiqServer#validate_worker.*exceeded limit' evm.log \
+        | sed -n -e 's/^.*MiqServer#validate_worker.*\(Worker.*.]\) with ID.*/\1/p' \
+        | sort | uniq
+
+  ignore_errors: true
+  register: validation
+
+- name: [ perf_capture ] health check queue length
+  shell: |
+    cd /var/www/miq/vmdb/log;
+    grep 'perf_capture_health_check' evm.log
+
+- name: count for state ems_metrics_processor
+  shell: |
+    cd /var/www/miq/vmdb/log;
+    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_processor\"=>[[:digit:]]+" | tail -n 3
+
+- name: count for state ems_metrics_collector
+  shell: |
+    cd /var/www/miq/vmdb/log;
+    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_collector\"=>[[:digit:]]+" | tail -n 3
