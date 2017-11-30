@@ -2,7 +2,7 @@
 #
 # Run adhoc checks that could also be viewed via Grafana dashboards for the appliance
 # Refer to https://github.com/redhat-performance/cfme-performance for more on that.
-# 
+#
 
 - name: Check validate worker output
   shell: |
@@ -10,21 +10,74 @@
        egrep 'MiqServer#validate_worker.*exceeded limit' evm.log \
         | sed -n -e 's/^.*MiqServer#validate_worker.*\(Worker.*.]\) with ID.*/\1/p' \
         | sort | uniq
-
   ignore_errors: true
   register: validation
 
 - name: [ perf_capture ] health check queue length
   shell: |
-    cd /var/www/miq/vmdb/log;
-    grep 'perf_capture_health_check' evm.log
+    grep 'perf_capture_health_check' /var/www/miq/vmdb/log/evm.log
 
+# count from logs
 - name: count for state ems_metrics_processor
   shell: |
-    cd /var/www/miq/vmdb/log;
-    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_processor\"=>[[:digit:]]+" | tail -n 3
+    grep 'count for state=\["ready"\]' /var/www/miq/vmdb/log/evm.log \
+      | egrep -o "\"ems_metrics_processor\"=>[[:digit:]]+" | tail -n 3
 
 - name: count for state ems_metrics_collector
   shell: |
-    cd /var/www/miq/vmdb/log;
-    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_collector\"=>[[:digit:]]+" | tail -n 3
+    grep 'count for state=\["ready"\]' /var/www/miq/vmdb/log/evm.log \
+      | egrep -o "\"ems_metrics_collector\"=>[[:digit:]]+" | tail -n 3
+
+- name: [evm:status] for single node
+  shell: |
+    ps -f --ppid $(ps -ef | grep 'MIQ Server' | grep -v grep | awk '{print $2}')
+
+- name: [evm:status] for all appliances in multi appliance environment
+  shell: |
+    cd /var/www/miq/vmdb; rake evm:status_full
+
+########
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep perf_rollup /var/www/miq/vmdb/log/evm.log | grep '46550:' | grep Timings
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep 'count for state' /var/www/miq/vmdb/log/evm.log
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep 'MiqServer#validate_worker' evm.log
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep 'perf_capture_health_check' evm.log
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_processor\"=>[[:digit:]]+"
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep 'count for state=\["ready"\]' evm.log | egrep -o "\"ems_metrics_collector\"=>[[:digit:]]+"
+
+- name: count for state ems_metrics_collector
+  shell: |
+    ruby ~/ems_refresh_timings.rb |grep "CloudManager\|ems_refresh\|save_inventory\|parse"
+
+- name: count for state ems_metrics_collector
+  shell: |
+    ruby ~/perf_process_timings.rb | grep "Message fetch time\|Message time in queue"
+
+- name: count for state ems_metrics_collector
+  shell: |
+    ruby ~/daily_perf_rollup_timings.rb
+
+- name: count for state ems_metrics_collector
+  shell: |
+    grep JobProxyDispatcher /var/www/miq/vmdb/log/evm.log
+
+# - name: count for state ems_metrics_collector
+#   shell: |
+#     Grafana TAIL on evm.log
