@@ -1,0 +1,26 @@
+
+# following could also be used to check the total connections
+# netstat -antlp | egrep 5432.*ESTA.*postgre -c
+- name: Check open postgreSQL connections [total]
+  shell: |
+     psql -d vmdb_production -c '
+        SELECT datname,count(datid)
+        FROM pg_stat_activity
+        GROUP BY pg_stat_activity.datname;'
+  # register: total_con
+
+- name: Check open postgreSQL connections [detailed]
+  shell:
+     psql -d vmdb_production -c '
+        SELECT client_addr,state,count(datid)
+        FROM pg_stat_activity
+        GROUP BY pg_stat_activity.client_addr,pg_stat_activity.state;'
+  register: validation
+
+# TBD: dump settings
+# psql -d vmdb_production -qAtc 'select * from pg_settings' > current_pg_settings
+
+# count from db
+- name: Check open postgreSQL connections [detailed]
+  shell:
+     psql -d vmdb_production -c 'SELECT role,count(id) FROM miq_queue GROUP BY miq_queue.role;'
