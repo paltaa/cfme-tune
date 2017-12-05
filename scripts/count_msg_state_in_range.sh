@@ -62,6 +62,12 @@ done
 # Logfile created on 2017-11-29 06:16:54 -0500 by logger.rb/54362
 
 init_args(){
+
+  if [[ -z $FILE_P ]]; then
+    FILE_P=/var/www/miq/vmdb/log/evm.log
+    log "INFO -- Using default file path"
+  fi
+
   log "INFO -- processing log file: $FILE_P"
 
   get_tz=$(grep "Logfile created on" $FILE_P)
@@ -77,10 +83,6 @@ init_args(){
       log_tz="UTC"
   fi
 
-  if [[ -z $FILE_P ]]; then
-    FILE_P=/var/www/miq/vmdb/log/evm.log
-    log "INFO -- Using default file path"
-  fi
   if [[ -z $msg_type ]]; then
     msg_type='error'
     # other possiblity => 'ok'
