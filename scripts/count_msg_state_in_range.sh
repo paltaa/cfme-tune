@@ -70,6 +70,24 @@ init_args(){
 
   log "INFO -- processing log file: $FILE_P"
 
+  filename=$(basename $FILE_P)
+  extension=${filename#*.*.}
+  file_delivered=/tmp/"$filename"_delivered
+  log_frag_file=/tmp/"$filename"_log_frag
+  ids_file=/tmp/"$filename"_ids
+  completed_file=/tmp/"$filename"_completed
+  FILE_P_TMP=/tmp/evm_decompressed.log
+
+  if [[ $extension -eq 'gz' ]]; then
+    log "INFO -- attempting to decompress $FILE_P into $FILE_P_TMP"
+    gunzip  -c $FILE_P > $FILE_P_TMP
+    if [[ ! $? -eq 0 ]]; then
+      log "Failed to decompress log file"
+      exit 1
+    fi
+    FILE_P=$FILE_P_TMP
+  fi
+
   get_tz=$(grep "Logfile created on" $FILE_P)
   log_tz=$(echo $get_tz| sed -n -e 's/^.*created on.*-\(.*\) by.*$/\1/p')
   log "INFO -- Attempting to infer Log TZ"
@@ -88,17 +106,16 @@ init_args(){
     # other possiblity => 'ok'
     log "INFO -- Using default message delivered type - state [error]"
   fi
-  filename=$(basename $FILE_P)
-  extension=${FILE_P#*.}
-  file_delivered=/tmp/"$filename"_delivered
-  log_frag_file=/tmp/"$filename"_log_frag
-  ids_file=/tmp/"$filename"_ids
-  completed_file=/tmp/"$filename"_completed
 
   set -e
 }
 
 cleanup(){
+  # if [[ -f $FILE_P_TMP ]]; then
+  #   log "INFO -- deleting previous garbage -> $FILE_P_TMP"
+  #   rm $FILE_P_TMP
+  # fi
+
   # cleanup traces of symlink if present
   if [[ -f $log_frag_file ]]; then
     log "INFO -- deleting previous garbage -> $log_frag_file"
@@ -122,25 +139,22 @@ cleanup(){
 }
 
 preprocess(){
-  less $1 | grep 'State\: \['$msg_type'\], Delivered in' > $file_delivered
-  cat $file_delivered |  grep -oE '(Message id: \[[0-9]*\])' | \
+  grep 'State\: \['$msg_type'\], Delivered in' $1 > $file_delivered
+  grep -oE '(Message id: \[[0-9]*\])' $file_delivered | \
     sed 's/Message id: \[//' | sed 's/.\{1\}$//' > $ids_file
   log "INFO -- extracted MSG STATE [$msg_type] and IDs from $file_delivered"
 }
 
 fragment_logfile(){
-  if [[ $extension == '.tar.gz' ]]; then
-    # deal with archived evm log file
-    echo -e "$(less $FILE_P | awk -F'[]]|[[]| ' '$0 ~ /^\[----\] I, \[/ &&
-      $6 >= "'$log_start'" { p=1 }
-      $6 >= "'$log_end'" { p=0 } p { print $0 }' \
-      )" > $log_frag_file
-  else
-    echo -e "$(awk -F'[]]|[[]| ' '$0 ~ /^\[----\] I, \[/ &&
-      $6 >= "'$log_start'" { p=1 }
-      $6 >= "'$log_end'" { p=0 } p { print $0 }' \
-      $FILE_P )" > $log_frag_file
-  fi
+  # # deal with archived evm log file
+  # echo -e "$(less $FILE_P | awk -F'[]]|[[]| ' '$0 ~ /^\[----\] I, \[/ &&
+  #   $6 >= "'$log_start'" { p=1 }
+  #   $6 >= "'$log_end'" { p=0 } p { print $0 }' \
+  #   )" > $log_frag_file
+  echo -e "$(awk -F'[]]|[[]| ' '$0 ~ /^\[----\] I, \[/ &&
+    $6 >= "'$log_start'" { p=1 }
+    $6 >= "'$log_end'" { p=0 } p { print $0 }' \
+    $FILE_P )" > $log_frag_file
 }
 
 get_log_range(){
@@ -195,14 +209,13 @@ define_log_range(){
     log_end=$(tail -1 $FILE_P  | sed -n -e 's/^.*I, \[\(.*\) #.*\].*/\1/p' | awk -F'.' '{print$1}')
     time_last_est=$(TZ=$log_tz date -d "$log_end")
     log_start=$(TZ=$log_tz date --date="${time_last_est} - 1 hour" +'%Y-%m-%dT%H:%M:%S')
-    fragment_logfile
   else
     # check if supplied time range is a subset of log file's range
     get_log_range
     check_supplied_range
-    log "INFO -- extracting logs between $log_start and $log_end"
-    fragment_logfile
   fi
+  log "INFO -- extracting logs between $log_start and $log_end"
+  fragment_logfile
 }
 
 postprocess(){
