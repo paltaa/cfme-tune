@@ -11,7 +11,7 @@ A collection of playbooks for Performance Tuning and health check of CFME/Manage
  - [Group_vars all.yml](#group_vars---alllocalyml)
 - [Playbook Directories](#playbook-directories)
 - [Which playbooks should I use?](#which-playbooks-should-i-use)
-
+- [Adhoc Scripts](#adhoc-scripts)
 
 ## Installation
 To install:  
@@ -73,4 +73,18 @@ Each entry under appliances must match an entry in your ansible inventory file (
   * [Install](install/)
 * If you want to test the performance of CFME/ManageIQ:
   * The [Python Test Framework](../cfme-performance/) currently provides this functionality instead.
+
+## Adhoc scripts
+
+You could use the scripts under `scripts/` folder as following:
+
+1. `count_msg_state_in_range.sh`: Run this `./count_msg_state_in_range.sh -t ok` to find last 1 hour's worth of delivered messages in [ok] state. Other usage examples: https://gist.github.com/arcolife/6d6bda31ad3685e05cb1f91c34d97d4b
+
+2. `cleanup_cfme.sh`: Run it to cleanup an appliance and start fresh. Check if your postgresql services name matches `rh-postgresql95-postgresql` by default. For Cloudforms 4.5 and 4.6, this should be default
+
+3. `nodes_ops.sh`: not a "script" script. More like a helper catalogue of shell scripts to handle nodes on an openshift infrastructure
+
+4. `mem_script.sh`: List of bash hacks to produce RSS / SWAP output.
+
+5. `get_ems_refresh_avg.sh|get_metric_capture_avg.sh`: old scripts to get EMS Refresh / C&U timings. Could either modify them or use this excellent pack of Ruby scripts developed by pemcg -> https://github.com/RHsyseng/cfme-log-parsing
 
