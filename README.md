@@ -78,7 +78,7 @@ Each entry under appliances must match an entry in your ansible inventory file (
 
 You could use the scripts under `scripts/` folder as following:
 
-1. `count_msg_state_in_range.sh`: Run this `./count_msg_state_in_range.sh -t ok` to find last 1 hour's worth of delivered messages in [ok] state. Other usage examples: https://gist.github.com/arcolife/6d6bda31ad3685e05cb1f91c34d97d4b
+1. `count_msg_state_in_range.sh`: Run this `./count_msg_state_in_range.sh -t ok` to find last 1 hour's worth of delivered messages in [ok] state. This script handles both text and compressed (.gz) evm log files. Other usage examples: https://gist.github.com/arcolife/6d6bda31ad3685e05cb1f91c34d97d4b
 
 2. `cleanup_cfme.sh`: Run it to cleanup an appliance and start fresh. Check if your postgresql services name matches `rh-postgresql95-postgresql` by default. For Cloudforms 4.5 and 4.6, this should be default
 
