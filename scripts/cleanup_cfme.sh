@@ -22,8 +22,7 @@ rm -rf /run/httpd/*
 
 mkdir -p ~/evm_logs/"$start"
 mv /var/www/miq/vmdb/log/evm.log* ~/evm_logs/"$start"/
-rm -rf /var/www/miq/vmdb/log/*.log*
-rm -rf /var/www/miq/vmdb/log/apache/*.log*
+find /var/www/miq/vmdb/log/ -type f -name "*.log" -exec truncate -s 0
 
 # miqtop miqvmstat
 systemctl start httpd evmserverd collectd
